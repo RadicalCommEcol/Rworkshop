@@ -53,7 +53,7 @@ Do not expect statistics to be easy
 Do not expect statistics to be easy
 ========================================================
 
-![stats](media/log?.png)
+![stats](media/log_or_not.png)
 
 Be aware that statistical analysis can hardly fix a bad experimental design or poorly collected data.
 ========================================================
