@@ -72,7 +72,7 @@ Learn about researchers degrees of freedom
 - Pre-registration?
 
 
-Always plot your data, even before running tests
+Always plot your data
 ========================================================
 
 ![stats](media/Regresion.png)
@@ -129,4 +129,14 @@ Practice Open Science and reproducibility
 - Errors are fine as long as are honest and we catch them.
 
 
-
+The 9 pints
+========================================================
+- Have a question  
+- Do not expect statistics to be easy  
+- Be aware that statistical analysis can hardly fix a bad experimental design or poorly collected data    
+- Learn about researchers degrees of freedom    
+- Always plot your data  
+- Understand the statistical test you are performing  
+- Provide the full details of your statistical analyses     
+- Biological significance > statistical significance  
+- Practice Open Science and reproducibility    
