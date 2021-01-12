@@ -1,0 +1,763 @@
+---
+title: "Modelos estadísticos II: Modelos lineales generalizados"
+subtitle: "Técnicas estadísticas avanzadas para la conservación de la biodiversidad - Universidad de Huelva"
+author: "David García Callejas"
+date: "01/2021"
+output:
+  beamer_presentation:
+    theme: "metropolis"
+    highlight: zenburn
+fontsize: 10pt
+header-includes:
+- \usepackage{caption}
+- \captionsetup[figure]{labelformat=empty}
+- \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+knitr::opts_chunk$set(echo = TRUE, warnings = FALSE, message = FALSE, size = "small")
+library(tidyverse)
+library(patchwork)
+library(visreg)
+set.seed(42)
+```
+
+## Modelos lineales generalizados
+
+>- Hasta ahora: modelos lineales con variable respuesta **continua** y residuos **normales**
+
+>- ¿podemos modelar variables con respuestas discretas? Por ejemplo, mortalidad de peces en función de tiempo de exposición a temperaturas de 5ºC:
+
+```{r}
+gupp <- read.csv(here::here("datasets",
+                            "chap17f9_1GuppyColdDeath.csv"))
+head(gupp)
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="70%"}
+ggplot(gupp, aes(x = exposureDurationMin,y = mortality)) +
+  geom_point(position = position_jitter(width = .3,height = .03))
+```
+
+## Modelos lineales generalizados
+
+* ¿Podemos aplicar una regresión lineal a estos datos?
+
+>    - ¿la relación entre X e Y es lineal?
+>    - ¿esperamos que los residuos sean normales?
+
+## Modelos lineales generalizados
+
+```{r out.width="70%"}
+lmgupp <- lm(mortality ~ exposureDurationMin, data = gupp)
+ggplot(gupp, aes(x = exposureDurationMin,y = mortality)) +
+  geom_point(position = position_jitter(width = .3,height = .03)) + 
+  geom_smooth(method = "lm")
+```
+
+## Modelos lineales generalizados
+
+>- Para valores muy bajos o muy altos de exposición, la mortalidad es **< 0** o **> 1**
+>- ¿y los residuos?
+
+## Modelos lineales generalizados
+
+* Para valores muy bajos o muy altos de exposición, la mortalidad es **< 0** o **> 1**
+* ¿y los residuos?
+
+```{r echo=FALSE, out.width="80%"}
+plot(lmgupp,which = 1)
+```
+
+## Modelos lineales generalizados
+
+* Para valores muy bajos o muy altos de exposición, la mortalidad es **< 0** o **> 1**
+* ¿y los residuos?
+
+```{r echo=FALSE, out.width="80%"}
+hist(resid(lmgupp))
+```
+
+## Modelos lineales generalizados
+
+En este caso, queremos modelar la probabilidad de mortalidad en función del tiempo de exposición a temperaturas bajas, con una función limitada entre 0 y 1
+
+```{r echo=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","linear_logistic_regression.png"))
+```
+
+## Modelos lineales generalizados
+
+```{r echo=FALSE, out.width="80%"}
+binomial_smooth <- function(...) {
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), ...)
+}
+
+ggplot(gupp, aes(x = exposureDurationMin,y = mortality)) +
+  geom_point(position = position_jitter(width = .3,height = .03)) + 
+  binomial_smooth()
+```
+
+## Modelos lineales generalizados
+
+Este tipo de modelos, que permiten modelar respuestas *no normales*, se llaman **Modelos lineales generalizados** (*Generalized Linear Models*, GLM).
+
+Tienen tres componentes:
+
+>- Distribución estadística de la variable respuesta
+>- Variables predictoras
+>- Función de enlace
+
+## Modelos lineales generalizados
+
+>- En un modelo con variable respuesta **binaria**, la distribución es la distribución **binomial**.
+>- Las variables predictoras son equivalentes a un modelo lineal.
+>- La función de enlace nos permite modelar nuestra respuesta $a + b \cdot x_i$ en el intervalo $[0,1]$, en vez de que tome cualquier valor entre $[-\infty,\infty]$
+
+## Modelos lineales generalizados
+
+* Función de enlace
+
+Usamos la función logística: 
+
+$$Pr(mortalidad_i) = \frac{e^{a + bx_i}}{1 + e^{a + bx_i}}$$
+
+* La función enlace se aplica a la variable respuesta, por lo que reordenamos la ecuación previa:
+
+\begin{gather}
+Pr(mortalidad_i) = p_i = g(a + bx_i)\notag\\
+g^{-1}(p_i) = a + bx_i
+\end{gather}
+
+## Modelos lineales generalizados
+
+La función inversa de la logística se llama "logit". Esta, por fin, es nuestra función de enlace:
+
+$$logit(p_i) = a + bx_i$$
+De esta manera, para cualquier valor de $a, b, x_i$, la respuesta estará acotada entre $[0,1]$.
+
+## Modelos lineales generalizados
+
+**Función de enlace**: Transforma la estimación del modelo para que se ajuste a la distribución de la variable respuesta.
+
+## Modelos lineales generalizados
+
+* Ya tenemos todos los ingredientes para ajustar nuestro primer GLM
+
+```{r}
+glm1 <- glm(mortality ~ exposureDurationMin, 
+            data = gupp, 
+            family = "binomial")
+```
+
+que se corresponde con
+
+\begin{gather}
+logit(Pr(mortalidad_i)) =  a + b \cdot exposure_i\notag
+\end{gather}
+
+## Modelos lineales generalizados
+
+```{r size="tiny"}
+summary(glm1)
+```
+
+## Modelos lineales generalizados
+
+```{r}
+coef(glm1)
+```
+
+**Estos coeficientes están en escala logit**. No se pueden interpretar como probabilidades de manera directa, sino que debemos "deshacer" la función de enlace para recuperar probabilidades estándar. La función inversa de la logit es la función logística, que se aplica en R con el comando `plogis`. 
+
+## Modelos lineales generalizados
+
+Por ejemplo, si queremos saber la probabilidad de mortalidad de un pez en condiciones basales, sin exposición a temperaturas de 5ºC, el modelo sería:
+
+\begin{gather}
+logit(y_i) = a + b \cdot 0 = a\notag\\
+y_i = plogis(a)
+\end{gather}
+
+En R: 
+
+```{r}
+a <- coef(glm1)[1]
+plogis(a)
+```
+
+## Modelos lineales generalizados
+
+O si queremos saber la probabilidad de mortalidad de un pez tras 12 minutos de exposición:
+\begin{gather}
+logit(y_i) = a + b \cdot 12 \notag\\
+y_i = plogis(a + b \cdot 12)\notag
+\end{gather}
+
+```{r}
+a <- coef(glm1)[1]; b <- coef(glm1)[2]
+plogis(a + b*12)
+```
+
+Si el modelo es apropiado, esta probabilidad debe ser similar a las probabilidades obtenidas directamente de los datos:
+
+```{r}
+sum(gupp$mortality[gupp$exposureDurationMin == 12]) /
+nrow(gupp[gupp$exposureDurationMin == 12,])
+```
+
+## Modelos lineales generalizados
+
+Interpretar resultados: El paquete `effects` da los coeficientes en probabilidades
+
+```{r}
+library(effects)
+allEffects(glm1)
+```
+
+## Modelos lineales generalizados
+
+```{r}
+plot(allEffects(glm1))
+```
+
+## Modelos lineales generalizados
+
+* Comprobación de los residuos del modelo
+
+```{r eval=FALSE}
+plot(glm1)
+```
+
+```{r echo=FALSE, out.width="80%"}
+plot(glm1,which = 1)
+```
+
+## Modelos lineales generalizados
+
+* Comprobación de los residuos del modelo: paquete `DHARMa`
+
+```{r results='hide', out.width="70%"}
+library(DHARMa)
+simulateResiduals(glm1,plot = TRUE)
+```
+
+## Modelos lineales generalizados
+
+Pasos para generar GLMs:
+
+>- Análisis exploratorio: Visualización de los datos
+>- Ajuste del modelo (cuidado con el argumento "family"!)
+>- Comprobación: `summary`, residuos (e.g. con `DHARMa`)
+>- Transformar coeficientes (e.g. con `allEffects`)
+>- Visualizar modelo (e.g. con `allEffects` o `visreg`)
+
+## Modelos lineales generalizados
+
+Los modelos de regresión logística se pueden aplicar también a datos de proporciones
+
+```{r}
+gupp.prop <- gupp %>% 
+  group_by(exposureDurationMin) %>% 
+  summarise(alive = sum(mortality == 0),
+            dead = sum(mortality == 1))
+```
+
+```{r}
+gupp.prop
+```
+
+## Modelos lineales generalizados
+
+Ajustamos el modelo usando `cbind(positivos, negativos)` como variable respuesta. En este caso, la probabilidad es de mortalidad, por lo que nuestro "positivo" es el número de muertes.
+
+```{r}
+glm.prop <- glm(cbind(dead,alive) ~ exposureDurationMin, 
+                data = gupp.prop, 
+                family = "binomial")
+```
+
+```{r}
+coef(glm1)
+coef(glm.prop)
+```
+
+## Modelos lineales generalizados
+
+* Otro ejemplo con datos de proporciones
+
+```{r}
+gdp <- read.csv(here::here("datasets",
+                           "UN_GDP_infantmortality.csv"))
+head(gdp)
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="80%", warning=FALSE}
+ggplot(gdp, aes(x = gdp, y = mortality)) + 
+  geom_point()
+```
+
+## Modelos lineales generalizados
+
+```{r}
+gdp.glm <- glm(cbind(mortality, 1000 - mortality) ~ gdp,
+               data = gdp, family = binomial)
+```
+
+## Modelos lineales generalizados
+
+```{r size="tiny"}
+summary(gdp.glm)
+```
+
+## Modelos lineales generalizados
+
+Coeficientes:
+
+```{r}
+allEffects(gdp.glm)
+```
+
+## Modelos lineales generalizados
+
+Visualización del modelo:
+
+```{r}
+plot(allEffects(gdp.glm))
+```
+
+## Modelos lineales generalizados
+
+Residuos:
+
+```{r results='hide', out.width="80%"}
+simulateResiduals(gdp.glm,plot = TRUE)
+```
+
+## Modelos lineales generalizados
+
+Welcome to the real world!
+
+```{r echo=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","dicaprio.png"))
+```
+
+## Modelos lineales generalizados
+
+Este patrón en los residuos indica **sobredispersión**. Los datos están más dispersos de lo que esperaríamos según el modelo. En este caso, para un gdp determinado, hay una variación muy grande en mortalidad infantil.
+
+```{r out.width="70%"}
+visreg(gdp.glm, scale = "response")
+points(mortality/1000 ~ gdp, data = gdp)
+```
+
+## Modelos lineales generalizados
+
+Podemos comprobar la sobredispersión (o infradispersión) de manera explícita con `DHARMa`:
+
+```{r}
+simres <- simulateResiduals(gdp.glm, refit = TRUE)
+testDispersion(simres, plot = FALSE)
+```
+
+## Modelos lineales generalizados
+
+La sobredispersión se puede tratar explicitamente escogiendo otra distribución para la variable respuesta. En este caso, la distribución *quasibinomial* ayuda a modelar esta varianza extra
+
+```{r}
+gdp.glm.qb <- glm(cbind(mortality, 1000 - mortality) ~ gdp,
+               data = gdp, family = quasibinomial)
+```
+
+## Modelos lineales generalizados
+
+* Los valores medios de los coeficientes se mantienen con respecto al modelo binomial
+
+```{r}
+allEffects(gdp.glm)
+allEffects(gdp.glm.qb)
+```
+
+## Modelos lineales generalizados
+
+* Pero los errores asociados sí varían
+
+```{r}
+plot(allEffects(gdp.glm),main = "binomial dist")
+```
+
+
+## Modelos lineales generalizados
+
+* Pero los errores asociados sí varían
+
+```{r}
+plot(allEffects(gdp.glm.qb),main = "quasibinomial dist")
+```
+
+## Modelos lineales generalizados
+
+Más allá de la solución concreta, este ejemplo nos ayuda a pensar en la forma de las relaciones entre variables. No todas las relaciones son de naturaleza lineal
+
+```{r out.width="75%", warning=FALSE}
+ggplot(gdp, aes(x = gdp, y = mortality)) + 
+  geom_point()
+```
+
+## Modelos lineales generalizados
+
+```{r echo=FALSE, out.width="95%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","transformaciones.png"))
+```
+
+## Modelos lineales generalizados
+
+A veces es conveniente transformar la variable respuesta para acercarnos a una relación lineal
+
+```{r out.width="80%", warning=FALSE}
+ggplot(gdp, aes(x = log(gdp), y = mortality)) + 
+  geom_point()
+```
+
+## Modelos lineales generalizados
+
+```{r}
+gdp.glm.log <- glm(cbind(mortality, 1000 - mortality) ~ log(gdp),
+               data = gdp, family = quasibinomial)
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="80%"}
+visreg(gdp.glm.log, scale = "response")
+points(mortality/1000 ~ gdp, data = gdp)
+```
+
+## Modelos lineales generalizados
+
+```{r eval=FALSE}
+plot(gdp.glm.log)
+```
+
+```{r echo=FALSE, out.width="80%"}
+plot(gdp.glm.log,which = 1)
+```
+
+## Modelos lineales generalizados
+
+Este último modelo sigue sin ser ideal, pero con datos reales, a veces no es fácil llegar a modelos *perfectos*
+
+## Modelos lineales generalizados
+
+>- Ya conocemos la distribución normal $Y \sim N(\mu,\sigma^2)$, que es una distribución continua, y la binomial, que es una distribución discreta. Hay muchas otras distribuciones que podemos considerar para modelar datos ecológicos.
+
+>- Uno de los tipos de datos más comunes que nos encontraremos son datos de conteos
+
+## Modelos lineales generalizados
+
+* Ya conocemos la distribución normal $Y \sim N(\mu,\sigma^2)$, que es una distribución continua, y la binomial, que es una distribución discreta. Hay muchas otras distribuciones que podemos considerar para modelar datos ecológicos.
+
+* Uno de los tipos de datos más comunes que nos encontraremos son datos de conteos
+
+```{r}
+seedlings <- read.csv(here::here("datasets","seedlings.csv"))
+head(seedlings)
+```
+
+## Modelos lineales generalizados
+
+* Los datos de conteos son datos discretos en el intervalo $[0,1,..,n]$
+
+* Estos datos se modelan con la distribución de **Poisson**: una distribución discreta que expresa la probabilidad de un número de eventos ocurriendo en un intervalo fijo (espacial o temporal), suponiendo que estos eventos ocurren con una tasa media constante, y de manera independiente entre eventos.
+
+## Modelos lineales generalizados
+
+Por ejemplo, pensad en alguien que salga a menudo al campo a observar aves, y anote el tiempo que tarda entre cada observación. 
+
+* Podemos asumir que la tasa media de observaciones por hora es constante, porque nuestro observador siempre va a la misma zona y en la misma época del año. 
+
+* Nuestro observador, fijándose en sus notas, concluye que, de media, observa 5 aves por hora. 
+
+* Podemos preguntarnos cuál es la probabilidad de observar un número X de aves por hora, dada esta tasa media. Esto es jusamente lo que nos dice la distribución de Poisson
+
+## Modelos lineales generalizados
+
+```{r out.width="70%"}
+prob.poisson <- dpois(x = 1:10,lambda = 5)
+prob.df <- data.frame(observaciones = 1:10, 
+                      prob = prob.poisson)
+ggplot(prob.df, aes(x = observaciones, y = prob)) + 
+  geom_point()
+```
+
+## Modelos lineales generalizados
+
+```{r echo=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","poisson.png"))
+```
+
+## Modelos lineales generalizados
+
+En el ejemplo del dataset `seedlings.csv`, queremos modelar *el número de seedlings observados* en función de varios parámetros. Usando un modelo lineal generalizado con distribución Poisson, asumimos:
+
+- que el número medio de seedlings observado es constante
+- que las observaciones son independientes: observar un seedling en un punto determinado no influye en cualquier otra observación
+
+Estas asunciones pueden parecer muy restrictivas, pero son necesarias para hacer inferencia.
+
+## Modelos lineales generalizados
+
+Para ajustar un GLM Poisson, necesitamos los mismos ingredientes que para el GLM binomial:
+
+>- Distribución de la variable respuesta: **Poisson**
+>- Variables independientes (numéricas o categóricas)
+>- Función de enlace: La más común es el **logaritmo** ¿por qué? la media debe ser *positiva*!
+
+## Modelos lineales generalizados
+
+* Función de enlace para GLM Poisson:
+
+\begin{gather}
+ln(\mu_i) = a + b \cdot x_i \Leftrightarrow \mu_i = e^{a + b \cdot x_i}\notag
+\end{gather}
+
+## Modelos lineales generalizados
+
+```{r out.width="80%"}
+hist(seedlings$count)
+```
+
+## Modelos lineales generalizados
+
+```{r}
+head(seedlings)
+```
+
+¿Hay relación entre el número de seedlings y la radiación solar?
+
+## Modelos lineales generalizados
+
+```{r out.width="80%"}
+ggplot(seedlings, aes(x = light, y = count)) + 
+  geom_point()
+```
+
+## Modelos lineales generalizados
+
+```{r}
+seedl.glm <- glm(count ~ light, 
+                 data = seedlings, 
+                 family = poisson)
+```
+
+## Modelos lineales generalizados
+
+```{r size="scriptsize"}
+summary(seedl.glm)
+```
+
+## Modelos lineales generalizados
+
+* Al igual que con el modelo binomial, aquí tenemos que transformar los coeficientes para interpretarlos. Los que devuelve el modelo están en escala logarítmica
+
+```{r}
+coef(seedl.glm)
+```
+
+* Les aplicamos el inverso del logaritmo: la exponencial
+
+```{r}
+exp(coef(seedl.glm))
+```
+
+El número medio de seedlings observados es `r exp(coef(seedl.glm)[1])`. Cada incremento de una unidad en radiación tiene un efecto multiplicativo de `r exp(coef(seedl.glm)[2])` sobre la media.
+
+## Modelos lineales generalizados
+
+```{r}
+summary(allEffects(seedl.glm))
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="80%"}
+plot(allEffects(seedl.glm))
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="80%"}
+visreg(seedl.glm, scale = "response", ylim = c(0, 7))
+points(count ~ light, data = seedlings, pch = 20)
+```
+
+## Modelos lineales generalizados
+
+* Como siempre... comprobación de residuos
+
+```{r out.width="70%", warning=FALSE, message=FALSE, results='hide'}
+DHARMa::simulateResiduals(seedl.glm, plot = TRUE)
+```
+
+## Modelos lineales generalizados
+
+* El modelo es razonable, y nos indica que *no* hay diferencias estadísticas entre la cantidad de seedlings observados con diferentes niveles de radiación.
+
+* En datos de conteos, la sobredispersión es bastante común. Podemos asegurarnos de que no es el caso, de nuevo usando el paquete `DHARMa`
+
+```{r}
+simres <- simulateResiduals(seedl.glm, 
+                            refit = TRUE)
+testDispersion(simres, plot = FALSE)
+```
+
+## Modelos lineales generalizados
+
+* Al igual que para el modelo binomial, si observamos sobredispersión en nuestro modelo podemos modificar la distribución. Para un modelo de conteos, dos opciones son la `quasipoisson` y la binomial negativa (esta última es más robusta, pero necesita la función `glm.nb` del paquete `MASS`)
+
+## Modelos lineales generalizados
+
+```{r}
+head(seedlings)
+```
+
+* ¿y si las observaciones fueron tomadas en plots de diferentes areas? Por definición, en plots de áreas más grandes (e.g. 1m²) será más probable observar seedlings que en plots más pequeños (e.g. 0.25m²). Queremos modelar *seedlings observados por unidad de área*.
+
+## Modelos lineales generalizados
+
+* El factor tamaño se tiene en cuenta con el argumento `offset`
+
+```{r}
+seedl.offset <- glm(count ~ light, 
+                   data = seedlings, 
+                   offset = log(seedlings$area), 
+                   family = poisson)
+```
+
+## Modelos lineales generalizados
+
+* ¿Porqué `log(area)`?
+
+En vez de tener
+
+$$log(\mu_i) = a + b \cdot x_i$$
+
+ahora tenemos
+
+$$log(\frac{\mu_i}{a_i}) = a + b \cdot x_i$$
+
+lo que, reordenando, nos deja
+
+$$log(\mu_i) = log(a_i) + a + b \cdot x_i$$
+
+## Modelos lineales generalizados
+
+Los coeficientes ahora vienen referidos *por unidad de área*
+
+```{r}
+exp(coef(seedl.offset))
+```
+
+## Modelos lineales generalizados
+
+* Las figuras de `allEffects` se generan sin transformar los coeficientes de vuelta, cuidado
+
+```{r out.width="70%"}
+plot(allEffects(seedl.offset))
+```
+
+## Modelos lineales generalizados
+
+* Otro ejemplo: número de casos de cáncer en cuatro ciudades danesas por grupos de edad, durante cuatro años. ¿Varía el número de casos observados por grupos de edad?. Cada ciudad tiene un tamaño diferente, por lo que tiene sentido modelar la media de casos observados *en función del tamaño de la población*.
+
+```{r}
+cancer.data <- read.csv(here::here("datasets","cancer_data.csv"))
+head(cancer.data)
+```
+
+## Modelos lineales generalizados
+
+* Recordamos usar `family = poisson` y dar el logaritmo de la población como offset. En este caso, lo modificamos ligeramente para obtener casos *por año y por 10000 habitantes*. Recordad que los datos son de un periodo de cuatro años, por lo que 
+
+$$\frac{\mu_i * 10000/4}{pop_i} = \frac{\mu_i}{pop_i/2500}$$  
+
+```{r}
+canc.glm <- glm(cases ~ age, 
+                offset = log(pop/2500), 
+                data = cancer.data, 
+                family = poisson)
+```
+
+## Modelos lineales generalizados
+
+```{r out.width="80%", warning=FALSE,message=FALSE,results='hide'}
+DHARMa::simulateResiduals(canc.glm, plot = TRUE)
+```
+
+## Modelos lineales generalizados
+
+* La variable respuesta es categórica. Recordad la interpretación
+
+```{r size="footnotesize"}
+exp(coef(canc.glm))
+```
+
+El `intercept` (a) nos dice el número de casos por año y 10000 habitantes en la categoría de referencia (40-54 años).
+
+Los coeficientes de los grupos de edad superiores van referidos a su **variación** con respecto al grupo de referencia. Por ejemplo, personas de 60-64 años tienen, en media, `r exp(coef(canc.glm)[3])` casos más de cáncer por año y 10000 habitantes que el grupo de 40-54 años.
+
+## Modelos lineales generalizados
+
+¿Son estadísticamente significativas estas diferencias? 
+
+```{r size="scriptsize"}
+summary(canc.glm)
+```
+
+## Modelos lineales generalizados
+
+¿Son estadísticamente significativas estas diferencias? 
+
+```{r}
+exp(confint(canc.glm))
+```
+
+## Modelos lineales generalizados
+
+**Otras consideraciones**
+
+>- ¿R² para GLM? No es tan sencillo como para modelos lineales. Existen aproximaciones, pero en general, no son fácilmente interpretables como un buen o mal ajuste del modelo.
+
+>- ¿otras distribuciones? Gamma (datos continuos, positivos, y asimétricos), Beta (continua, acotada entre 0 y 1)... 
+
+>- El ajuste en GLMs no se calcula por el método de mínimos cuadrados. Se calcula por el método de máxima verosimilitud (maximum likelihood). No lo estudiaremos, pero si necesitáis profundizar en el ajuste de modelos complejos, es el concepto más importante que hay que entender. Un buen sitio para empezar es el capítulo 20 de Whitlock & Schluter.
+
+## Modelos lineales generalizados
+
+**Resumen**
+
+>- Los modelos lineales generalizados (GLMs) nos permiten modelar datos que no siguen una distribución normal
+>- Las distribuciones más comunes son la binomial y la poisson, ambas discretas
+>- Los GLM necesitan además una función de enlace, para transformar las estimaciones a la distribución elegida
+>- Para interpretar los coeficientes de un GLM, por tanto, hay que deshacer la función de enlace
+>- El proceso de ajuste de un GLM es similar al de un modelo lineal: Visualización, ajuste, comprobación de residuos, interpretación
+>- Los GLM aceptan todo tipo de combinaciones de predictores: categóricos, numéricos, o interacciones entre ellos.
+
+## Modelos lineales generalizados
+
+**Recetario de R**
+
+* función para ajustar GLM: `glm(formula, data = datos, family = distribucion)`
+* comprobación de residuos: `DHARMa::simulateResiduals(modelo, plot = TRUE)`
+* comprobación de sobredispersion (también con DHARMa): `testDispersion(simulateResiduals(modelo))`
+* coeficientes: transformar con `plogis` (binomial) o con `exp` (poisson). ¡Cuidado con la interpretación!
+

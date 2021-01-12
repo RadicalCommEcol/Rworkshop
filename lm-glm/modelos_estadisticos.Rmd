@@ -1,0 +1,804 @@
+---
+title: "Modelos estadísticos"
+subtitle: "Técnicas estadísticas avanzadas para la conservación de la biodiversidad - Universidad de Huelva"
+author: "David García Callejas"
+date: "01/2021"
+output:
+  beamer_presentation:
+    theme: "metropolis"
+    highlight: zenburn
+fontsize: 10pt
+header-includes:
+- \usepackage{caption}
+- \captionsetup[figure]{labelformat=empty}
+- \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\n \\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+knitr::opts_chunk$set(echo = TRUE, warnings = FALSE, message = FALSE, size = "small")
+library(tidyverse)
+library(patchwork)
+set.seed(42)
+```
+
+## Regresión estadística
+
+Hasta ahora:
+
+>- Sabemos cómo cuantificar una muestra o una población
+>- Sabemos los fundamentos del diseño experimental
+>- Sabemos cómo comparar dos muestras
+
+>- Pero aun queda todo un mundo de preguntas que podemos resolver:
+>    + ¿Cómo afecta una variable independiente a una respuesta?
+>    + ¿Podemos predecir una variable en función de otras?
+>    + ¿Qué ocurre cuando tenemos más de dos tratamientos en una población?
+
+## Regresión estadística
+
+```{r echo=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","marco_regresion.png"))
+```
+
+## Regresión estadística
+
+```{r echo=FALSE, out.width="99%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","model_types.png"))
+```
+
+## Regresión estadística
+
+Regresión lineal:
+
+* Relación lineal entre las variables
+
+
+```{r echo=FALSE, out.width="90%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","intercept_slope.png"))
+```
+
+## Regresión estadística
+
+Regresión lineal:
+
+* Minimiza el *error residual*
+
+```{r echo=FALSE, out.width="90%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","least_squares_line.png"))
+```
+
+## Regresión estadística
+
+* ¿Cómo calcular la recta con menor error residual? **Método de mínimos cuadrados**
+
+```{r echo=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","least_squares_line.png"))
+```
+
+\begin{gather}
+b = \frac{\sum{(x_i - \bar{x})(y_i - \bar{y})}}{\sum{(x_i - x)^2}}\\
+a = \bar{y} - b\bar{x}
+\end{gather}
+
+## Regresión estadística
+
+* Residuos: diferencia entre valor observado y predicho
+
+* Recuerda:
+
+\begin{gather}
+y_i = a + bx_i + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+* Residuos: diferencia entre valor observado y predicho
+
+```{r echo=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","error_residual.png"))
+```
+
+## Regresión estadística
+
+* Para que la estimación sea correcta, la distribución de residuos debe ser normal
+* y la varianza debe ser homogénea
+
+```{r echo=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","normalidad_residuos.png"))
+```
+
+## Regresión estadística
+
+* **Again**: Para que la estimación sea correcta, la distribución de residuos debe ser normal y la varianza residual, homogénea
+
+```{r echo=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","normalidad_residuos_2.png"))
+```
+
+## Regresión estadística
+
+**Asunciones de la regresión lineal:**
+
+>- variable respuesta: normal
+>- distribución de residuos: normal
+>- varianza residual: homogénea
+
+## Regresión estadística
+
+¿Podemos predecir la altura de un árbol a partir de su *dbh*?
+
+```{r}
+trees <- read.csv(here::here("datasets","trees.csv"))
+head(trees)
+```
+
+## Regresión estadística
+
+**Siempre**
+
+Visualiza los datos como primer paso
+
+```{r echo=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","plot_data_first.png"))
+```
+
+## Regresión estadística
+
+¿Hay outliers en los datos?
+
+```{r out.width="80%"}
+ggplot(trees, aes(dbh, height)) +
+geom_point()
+```
+
+## Regresión estadística
+
+¿Cómo están distribuidas las variables independientes y respuesta?
+
+```{r out.width="80%"}
+hist(trees$height)
+```
+
+## Regresión estadística
+
+¿Cómo están distribuidas las variables independientes y respuesta?
+
+```{r out.width="80%"}
+hist(trees$dbh)
+```
+
+## Regresión estadística
+
+Después del análisis exploratorio, si no hay nada raro, ajustamos el modelo:
+
+```{r}
+m1 <- lm(height ~ dbh, data = trees)
+```
+
+que se corresponde con:
+
+\begin{gather}
+height_i = a + b \cdot DBH_i + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+¿Y ahora?
+
+```{r}
+m1
+```
+
+## Regresión estadística
+
+```{r}
+summary(m1)
+```
+
+## Regresión estadística
+
+Antes de interpretar el resultado, comprobamos que los residuos se ajustan a una distribución normal
+
+```{r out.width="70%"}
+res <- resid(m1)
+hist(res)
+```
+
+## Regresión estadística
+
+```{r eval=FALSE}
+plot(m1)
+```
+
+```{r echo=FALSE, out.width="90%"}
+plot(m1, which = 1)
+```
+
+## Regresión estadística
+
+```{r eval=FALSE}
+plot(m1)
+```
+
+```{r echo=FALSE, out.width="90%"}
+plot(m1, which = 2)
+```
+
+## Regresión estadística
+
+```{r eval=FALSE}
+plot(m1)
+```
+
+```{r echo=FALSE, out.width="90%"}
+plot(m1, which = 3)
+```
+
+## Regresión estadística
+
+```{r eval=FALSE}
+plot(m1)
+```
+
+```{r echo=FALSE, out.width="90%"}
+plot(m1, which = 4)
+```
+
+## Regresión estadística
+
+Una vez comprobamos que el modelo ajusta bien, interpretamos los resultados
+
+```{r}
+summary(m1)
+```
+
+## Regresión estadística
+
+```{r}
+library(broom)
+tidy(m1)
+```
+
+Cada coeficiente tiene un valor estimado, el error asociado a ese valor (recordad el error estándar asociado a una muestra), y un p-valor. 
+
+Podemos recuperar los coeficientes directamente con
+
+```{r}
+coef(m1)
+```
+
+## Regresión estadística
+
+Nuestro modelo es:
+
+\begin{equation}
+height_i = 19.3392 + 0.6 \cdot dbh_i\notag
+\end{equation}
+
+## Regresión estadística
+
+Y los intervalos de confianza (al 95%) para los coeficientes son
+
+```{r}
+confint(m1)
+```
+
+Recordad que un intervalo al 95% es, aproximadamente, $\mu \pm 2\sigma$. La desviación típica asociada a cada coeficiente es su error estándar. Así pues, para la pendiente de la recta (el coeficiente asociado a la DBH), $0.61 \pm 2\cdot 0.01$ nos da los valores del intervalo.
+
+## Regresión estadística
+
+¿Cómo interpretar el p-valor asociado a un coeficiente?
+
+Generalmente, se dice que si $p < 0.05$, la variable independiente tiene una relación significativa (diferente de cero) con la respuesta. Esto no es necesariamente así. Ya sabemos que 0.05 es un valor arbitrario, y que las relaciones entre variables no son dicotómicas.
+
+```{r echo=FALSE, out.width="60%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","pvalue_significance.png"))
+```
+
+Ver: https://doi.org/10.1038/d41586-019-00857-9
+
+## Regresión estadística
+
+¿Cómo interpretar el p-valor asociado a un coeficiente?
+
+Es mucho más informativo comunicar el efecto asociado a una variable (e.g. aumentar una unidad de DBH implica aumentar en 0.6 unidades la altura de un árbol) y su incertidumbre asociada (su intervalo de confianza o su error estándar).
+
+## Regresión estadística
+
+We found a ~~significant~~ positive relationship between tree DBH and height ~~(p < 0.05)~~ (b = 0.61, SE = 0.01)
+
+## Regresión estadística
+
+El último parámetro de interés es el "coeficiente de determinación", $R^2$. Nos informa de cómo de bueno es el ajuste de nuestro modelo. Literalmente, nos dice qué proporción de la varianza en los datos viene explicada por nuestro modelo. En nuestro caso, 
+
+```{r}
+summary(m1)$adj.r.squared
+```
+
+La variación en altura entre los árboles de nuestra muestra viene explicada en un 79% por su variación en DBH. Existe un 21% de variación en altura que responde potencialmente a otros factores, sean estocásticos, errores muestrales, o ecológicos.
+
+>- nota: un $R^2$ de 0.79 es *realmente alto* para los estándares de estudios en ecología...
+
+## Regresión estadística
+
+Visualización del modelo:
+
+```{r}
+library(visreg)
+visreg(m1)
+```
+
+## Regresión estadística
+
+Visualización del modelo:
+
+```{r out.width="80%"}
+ggplot(trees, aes(x = dbh, y = height)) + 
+  geom_smooth(method = "lm") + 
+  geom_point()
+```
+
+## Regresión estadística
+
+¿Podemos predecir la altura de un árbol nuevo, en función de su DBH?
+\begin{equation}
+height_i = 19.3392 + 0.6 \cdot dbh_i\notag
+\end{equation}
+
+```{r}
+new.dbh <-data.frame(dbh =c(12))
+predict(m1, new.dbh,se.fit =TRUE)
+```
+
+## Regresión estadística
+
+¿Podemos predecir la altura de un árbol nuevo, en función de su DBH?
+\begin{equation}
+height_i = 19.3392 + 0.6 \cdot dbh_i\notag
+\end{equation}
+
+```{r}
+predict(m1, new.dbh,interval ="confidence")
+```
+
+
+```{r}
+predict(m1, new.dbh,interval ="prediction")
+```
+
+## Regresión estadística
+
+Estos intervalos nos ayudan a entender los dos tipos de predicciones asociadas a un modelo de regresión:
+
+* Predecir el valor medio de la variable respuesta para un valor determinado de la variable predictora
+* Predecir el valor concreto de la variable respuesta para un valor determinado de la variable predictora
+
+En nuestro ejemplo, esto se traduce en dos cuestiones:
+
+* Predecir la altura *media* de los árboles con una DBH determinada
+* Predecir la altura *de un individuo* con una DBH determinada
+
+Aunque el valor predicho será el mismo en ambos casos, la incertidumbre asociada a las predicciones es diferente. La primera predicción tiene asociado un intervalo de confianza, la segunda predicción tiene asociado un intervalo de predicción.
+
+## Regresión estadística
+
+Ejemplo con otros datos (en los datos de árboles el intervalo de confianza es muy pequeño)
+
+```{r eval=FALSE}
+# 0. datos y modelo
+data("cars", package = "datasets")
+model <- lm(dist ~ speed, data = cars)
+# predicciones
+pred.int <- predict(model, interval = "prediction")
+mydata <- cbind(cars, pred.int)
+# visualizar recta de regresión e intervalos
+library("ggplot2")
+p <- ggplot(mydata, aes(speed, dist)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+  # intervalos de predicción
+  geom_line(aes(y = lwr), color = "red", linetype = "dashed") +
+  geom_line(aes(y = upr), color = "red", linetype = "dashed")
+```
+
+## Regresión estadística
+
+```{r echo=FALSE, warning=FALSE, out.width="80%"}
+# 0. datos y modelo
+data("cars", package = "datasets")
+model <- lm(dist ~ speed, data = cars)
+# predicciones
+pred.int <- predict(model, interval = "prediction")
+mydata <- cbind(cars, pred.int)
+# visualizar recta de regresión e intervalos
+library("ggplot2")
+p <- ggplot(mydata, aes(speed, dist)) +
+  geom_point() +
+  stat_smooth(method = lm)
+p + geom_line(aes(y = lwr), color = "red", linetype = "dashed")+
+    geom_line(aes(y = upr), color = "red", linetype = "dashed")
+```
+
+## Regresión estadística
+
+Pasos en la elaboración de modelos estadísticos
+
+>- Análisis exploratorio y visualización
+>- Ajustar modelo
+>- Comprobar residuos
+>- Visualizar modelo
+>- Interpretar resultados
+>- Predicción
+
+## Regresión estadística
+
+Otros casos:
+
+>- variable independiente categórica
+>- múltiples variables independientes
+>- datos más complejos: residuos no normales, variable respuesta discreta...
+
+## Regresión estadística
+
+```{r echo=FALSE, out.width="99%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","model_types.png"))
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+```{r}
+head(trees)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Visualización
+
+```{r out.width="50%"}
+ggplot(trees, aes(x = sex, y = height)) + 
+  geom_point(position = position_jitter()) +
+  geom_boxplot(alpha = 0.5)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Ajustar modelo
+
+```{r out.width="50%"}
+m2 <- lm(height ~ sex, data = trees)
+```
+
+que se corresponde con
+
+\begin{gather}
+height_i = a + b_{male} + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+```{r}
+summary(m2)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+plot(m2, which = 1)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+plot(m2, which = 2)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+hist(resid(m2))
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Visualizar modelo
+  
+```{r out.width="80%"}
+visreg(m2)
+```
+  
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del sexo?
+
+  + Interpretar resultados
+  
+```{r}
+confint(m2)
+```
+  
+```{r}
+summary(m2)$adj.r.squared
+```
+
+## Regresión estadística
+
+* Un predictor categórico con varias categorías: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+```{r}
+head(trees)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Visualización
+
+```{r out.width="50%", warning=FALSE}
+ggplot(trees, aes(x = site, y = height)) + 
+  geom_point(position = position_jitter()) +
+  geom_boxplot(alpha = 0.5)
+```
+
+>- ¿Qué ocurre?
+
+## Regresión estadística
+
+```{r}
+str(trees)
+```
+
+>- "Site" es una variable numérica... debería ser categórica!
+
+## Regresión estadística
+
+```{r}
+str(trees)
+```
+
+>- "Site" es una variable numérica... debería ser categórica!
+
+```{r}
+trees$site <- as.factor(trees$site)
+```
+
+## Regresión estadística
+
+```{r out.width="50%"}
+ggplot(trees, aes(x = site, y = height)) + 
+  geom_point(position = position_jitter()) +
+  geom_boxplot(alpha = 0.5)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Ajustar modelo
+
+```{r out.width="50%"}
+m3 <- lm(height ~ site, data = trees)
+```
+
+que se corresponde con
+
+\begin{gather}
+height_i = a + b_{site2} + c_{site3} + d_{site4} + ... + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+```{r size="tiny"}
+summary(m3)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+plot(m3, which = 1)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+plot(m3, which = 2)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Comprobar residuos
+
+```{r echo=FALSE, out.width="70%"}
+hist(resid(m3))
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Visualizar modelo
+  
+```{r out.width="80%"}
+visreg(m3)
+```
+
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Visualizar modelo
+  
+```{r size="footnotesize"}
+library(effects)
+allEffects(m3)
+```
+  
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Visualizar modelo
+  
+```{r out.width="70%"}
+library(effects)
+plot(allEffects(m3))
+```
+  
+## Regresión estadística
+
+* Un predictor categórico: ¿Varía la altura de los árboles en función del lugar de muestreo?
+
+  + Interpretar resultados
+  
+```{r size="footnotesize"}
+confint(m3)
+```
+  
+```{r}
+summary(m3)$adj.r.squared
+```
+
+## Regresión estadística
+
+* Combinando predictores categóricos y numéricos: ¿Varía la altura de los árboles en función de su DBH y el lugar de muestreo?
+
+```{r}
+m4 <- lm(height ~ site + dbh, data = trees)
+```
+
+que se corresponde con
+
+\begin{gather}
+height_i = a + b_{site2} + c_{site3} + d_{site4} + ... + k \cdot DBH_i + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+```{r size = "tiny"}
+summary(m4)
+```
+
+## Regresión estadística
+
+```{r out.width="80%"}
+plot(allEffects(m4))
+```
+
+## Regresión estadística
+
+* Hemos ajustado un modelo con diferentes puntos de corte (uno por cada *site*) y una sola pendiente (DBH)
+
+```{r echo=FALSE, out.width="90%", fig.align="center"}
+knitr::include_graphics(here::here("figuras","trees_site_intercept.png"))
+```
+
+## Regresión estadística
+
+* Hemos ajustado un modelo con diferentes puntos de corte (uno por cada *site*) y una sola pendiente (DBH)
+
+>- ¿varía la relación altura-DBH ( = la pendiente) entre diferentes lugares de muestreo?
+
+## Regresión estadística
+
+* Interacciones entre predictores: ¿Varía la relación altura-DBH en función del lugar de muestreo?
+
+```{r}
+m5 <- lm(height ~ site * dbh, data = trees)
+```
+
+que se corresponde con
+
+\begin{gather}
+height_i = a + b_{site2} + c_{site3} + d_{site4} + ... +\\ k \cdot DBH + l \cdot DBH_{i,site2} + m \cdot DBH_{i,site3} + ... + \varepsilon_i\notag\\
+\varepsilon_i \sim N(0,\sigma^2)\notag
+\end{gather}
+
+## Regresión estadística
+
+```{r size = "tiny"}
+summary(m5)
+```
+
+## Regresión estadística
+
+```{r out.width="90%"}
+visreg(m5, xvar = "dbh", by = "site")
+```
+
+## Regresión estadística
+
+**Resumen de modelos lineales**
+
+>- permiten predecir una variable respuesta en función de otras independientes
+>- modelan *relaciones lineales*
+>- son la base para muchas de las técnicas estadísticas que trabajaréis
+
+## Regresión estadística
+
+Pasos en la elaboración de modelos estadísticos
+
+>- Análisis exploratorio y visualización
+>- Ajustar modelo
+>- Comprobar residuos
+>- Visualizar modelo
+>- Interpretar resultados
+>- Predicción
+
+## Regresión estadística
+
+**Recetario de R**
+
+* Ajustar un modelo: `modelo <- lm(respuesta ~ predictores, data = datos)`
+* comprobar residuos: `plot(modelo)`, `resid(modelo)`
+* visualizar modelo: `visreg(modelo)`, `allEffects(modelo)`
+* coeficientes: `coef(modelo)`, `tidy(modelo)`
+* intervalos de confianza: `confint(modelo)`
+* coeficiente de determinación: `summary(modelo)$adj.r.squared`
+
+## Regresión estadística
+
+Otros recursos:
+
+* https://bookdown.org/speegled/foundations-of-statistics/
+* https://bookdown.org/egarpor/PM-UC3M/
+
