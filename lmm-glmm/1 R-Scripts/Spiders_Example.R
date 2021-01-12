@@ -199,8 +199,10 @@ pval   <- 2*pnorm(-abs(Betas  / SE)) #Z distribution
 Output <- cbind(Betas,SE, pval)
 print(Output, digits = 3)
 
+# An alternative estimation of the p-values
 M2_TMB <- glmmTMB(Hlog10 ~ HerbLayerc + (1 | fPlot), 
-               data = Spiders) # The estimates of p-values are quite close
+               data = Spiders) 
+summary(M2_TMB) # The estimates of p-values are quite close
 # to the pevious ones.
 
 
@@ -243,7 +245,7 @@ summary(M3)
 
 # GroundVegc seems to be not significant
 
-# Alternative method: LogLikelyhood ratio test
+# Alternative method: LogLikelyhood ratio test (also from Zuur et al.)
 # REML assumes that the fixed effects structure is correct. 
 # Use maximum likelihood when comparing models with different fixed effects, 
 # as ML doesn’t rely on the coefficients of the fixed effects.
@@ -268,17 +270,17 @@ drop1(M4, test = "Chi") #diff~Xi^2_p where p is the diff. betw. the number of
 # These p-values are only reliable when the sample size - the number of parameters
 # is larger than 50.
 
+# In case you want to estimate AIC
 AIC(M4, M4A, M4B, M4C)
-
-# Even though you use ML to compare models, you should report parameter estimates 
-# from your final “best” REML model, as ML may underestimate variance of the 
-# random effects.
 
 #######################
 # Final model
 
 M5 <- lmer(Hlog10 ~ HerbLayerc + Litterc + (1 | fPlot), 
            data = Spiders, REML = TRUE)
+# Even though you use ML to compare models, you should report parameter estimates 
+# from your final “best” REML model, as ML may underestimate variance of the 
+# random effects.
 
 summary(M5)
 
@@ -342,8 +344,6 @@ M5_TMB <- glmmTMB(Hlog10 ~ HerbLayerc + Litterc + (1 | fPlot),
 visreg(M5_TMB, "HerbLayerc",
        by="fPlot",
        overlay=F,
-       line=list(col=color_vis, lwd=2,lty=rep(1,n)),
-       fill=list(col=add.alpha(color_vis,0.5)),
        points=list(cex=0.5),
        ylab="Shannon ",
        xlab="% Herbal Layer cover")
