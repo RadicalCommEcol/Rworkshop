@@ -1,7 +1,7 @@
 Common Sense Statistics
 ========================================================
 author: Ignasi Bartomeus
-date: 11 January 2021
+date: 18 May 2022
 autosize: true
 
 Common Sense Statistics
@@ -114,22 +114,68 @@ Biological significance > statistical significance
 Biological significance > statistical significance
 ========================================================
 
-![plot of chunk dos](CommonSense-figure/dos-1.png)
+
+```
+
+Call:
+lm(formula = d$values ~ d$treatment)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-5.7940 -1.3562 -0.2033  1.2013  6.0050 
+
+Coefficients:
+                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)           20.7825     0.2037 102.036  < 2e-16 ***
+d$treatmenttreatment  -1.0960     0.2880  -3.805 0.000189 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 2.037 on 198 degrees of freedom
+Multiple R-squared:  0.06814,	Adjusted R-squared:  0.06343 
+F-statistic: 14.48 on 1 and 198 DF,  p-value: 0.0001889
+```
 
 Biological significance > statistical significance
 ========================================================
 
 ![plot of chunk tres](CommonSense-figure/tres-1.png)
 
+Biological significance > statistical significance
+========================================================
+
+
+```
+
+Call:
+lm(formula = d$values ~ d$treatment)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-6.3779 -2.6385 -0.7762  1.1683 12.5558 
+
+Coefficients:
+                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)           21.1198     0.4244  49.758   <2e-16 ***
+d$treatmenttreatment   0.5667     0.5695   0.995    0.321    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 3.796 on 178 degrees of freedom
+Multiple R-squared:  0.005532,	Adjusted R-squared:  -5.467e-05 
+F-statistic: 0.9902 on 1 and 178 DF,  p-value: 0.321
+```
+
 Practice Open Science and reproducibility
 ========================================================
 
 - Document choices (Git)
 - Pair programming
+- code review
 - Errors are fine as long as are honest and we catch them.
 
 
-The 9 pints
+Common Sense Stastistics
 ========================================================
 - Have a question  
 - Do not expect statistics to be easy  

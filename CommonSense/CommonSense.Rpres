@@ -1,7 +1,7 @@
 Common Sense Statistics
 ========================================================
 author: Ignasi Bartomeus
-date: 11 January 2021
+date: 18 May 2022
 autosize: true
 
 Common Sense Statistics
@@ -110,21 +110,37 @@ Biological significance > statistical significance
 ========================================================
 
 ```{r uno, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-plot(jitter(seq(5,6,0.1),5) ~ seq(0,10,1), xlab = "competition", ylab = "seed set", las = 1)
+set.seed(1234)
+d <- data.frame(values = c(rnorm(100,20,2), rnorm(100,20.7,2)), 
+                treatment = c(rep("treatment", 100), rep("control", 100)))
+boxplot(d$values ~ d$treatment, 
+        xlab = "competition", ylab = "seed set", las = 1)
 ```
 
 Biological significance > statistical significance
 ========================================================
 
 ```{r dos, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-plot(jitter(seq(5,6,0.1),5) ~ seq(0,10,1), xlab = "competition", ylab = "seed set", las = 1, ylim = c(0,10))
+summary(lm(d$values ~ d$treatment))
 ```
 
 Biological significance > statistical significance
 ========================================================
 
 ```{r tres, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-plot(jitter(seq(2,8,0.6),20) ~ seq(0,10,1), xlab = "competition", ylab = "seed set", las = 1, ylim = c(0,10))
+set.seed(1234)
+d <- data.frame(values = c(rnorm(80,20,2), 
+                             rnorm(20,30,2), rnorm(80,21,2)), 
+                treatment = c(rep("treatment", 100), rep("control", 80)))
+boxplot(d$values ~ d$treatment, 
+        xlab = "competition", ylab = "seed set", las = 1)
+```
+
+Biological significance > statistical significance
+========================================================
+
+```{r cuatro, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+summary(lm(d$values ~ d$treatment))
 ```
 
 Practice Open Science and reproducibility
@@ -132,10 +148,11 @@ Practice Open Science and reproducibility
 
 - Document choices (Git)
 - Pair programming
+- code review
 - Errors are fine as long as are honest and we catch them.
 
 
-The 9 pints
+Common Sense Stastistics
 ========================================================
 - Have a question  
 - Do not expect statistics to be easy  
